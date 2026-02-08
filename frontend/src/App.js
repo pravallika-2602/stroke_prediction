@@ -21,27 +21,36 @@ function App() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const submit = async () => {
-    const payload = {
-      ...form,
-      age: form.age === "" ? undefined : Number(form.age),
-      hypertension: Number(form.hypertension),
-      heart_disease: Number(form.heart_disease),
-      avg_glucose_level:
-        form.avg_glucose_level === "" ? undefined : Number(form.avg_glucose_level),
-      bmi: form.bmi === "" ? undefined : Number(form.bmi),
-    };
+const submit = async () => {
+  const payload = {
+    age: Number(form.age),
+    gender: form.gender,
+    hypertension: form.hypertension === "1" ? 1 : 0,
+    heart_disease: form.heart_disease === "1" ? 1 : 0,
+    ever_married: form.ever_married,
+    work_type: form.work_type,
+    Residence_type: form.Residence_type,
+    avg_glucose_level: Number(form.avg_glucose_level),
+    bmi: Number(form.bmi),
+    smoking_status: form.smoking_status
+  };
 
-    const res = await fetch("https://stroke-risk-prediction-and-early.onrender.com/predict", {
+  console.log("Sending payload:", payload); // <-- IMPORTANT DEBUG LINE
+
+  const res = await fetch(
+    "https://stroke-risk-prediction-and-early.onrender.com/predict",
+    {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    });
+    }
+  );
 
+  const data = await res.json();
+  console.log("Backend response:", data); // <-- IMPORTANT DEBUG LINE
 
-    const data = await res.json();
-    setResult(data);
-  };
+  setResult(data);
+};
 
   return (
     <div className="app-container">
