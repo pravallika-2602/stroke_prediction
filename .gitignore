@@ -1,0 +1,8 @@
+node_modules/
+__pycache__/
+*.pyc
+*.pkl
+.env
+.vscode/
+*.log
+*.zip
