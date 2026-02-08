@@ -54,6 +54,7 @@ def home():
 @app.post("/predict")
 def predict(data: StrokeInput):
 
+    # 1️⃣ Encode inputs exactly like training
     encoded = {
         "gender": gender_map.get(data.gender, 1),
         "age": data.age,
@@ -67,23 +68,25 @@ def predict(data: StrokeInput):
         "smoking_status": smoke_map.get(data.smoking_status, 0)
     }
 
+    # 2️⃣ Force exact column order
     columns = [
-        "gender", "age", "hypertension", "heart_disease",
-        "ever_married", "work_type", "Residence_type",
-        "avg_glucose_level", "bmi", "smoking_status"
+        "gender","age","hypertension","heart_disease",
+        "ever_married","work_type","Residence_type",
+        "avg_glucose_level","bmi","smoking_status"
     ]
 
     df = pd.DataFrame([encoded], columns=columns)
 
-    # 🔥 CRITICAL FIX FOR RENDER + OLD MODELS
+    # 3️⃣ **HARD RESET OF XGBOOST FEATURE NAMES (Render-safe)**
     try:
-        booster = model.get_booster()
-        booster.feature_names = columns
+        model._Booster = model.get_booster()
+        model._Booster.feature_names = columns
     except Exception:
         pass
 
+    # 4️⃣ Predict safely using raw numpy (bypasses feature-name issue)
     try:
-        pred = int(model.predict(df)[0])
+        pred = int(model.predict(df.values)[0])
         return {
             "stroke_risk": pred,
             "risk_level": "High" if pred == 1 else "Low"
