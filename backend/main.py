@@ -7,22 +7,22 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Stroke Risk Prediction API")
 
-# ---- CORS (required for Vercel frontend) ----
+# ---- CORS (VERY IMPORTANT FOR VERCEL) ----
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],      # Allow Vercel frontend
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ---- SAFE MODEL LOADING FOR RENDER ----
+# ---- LOAD MODEL SAFELY ON RENDER ----
 BASE_DIR = os.path.dirname(__file__)
 MODEL_PATH = os.path.join(BASE_DIR, "stroke_xgb.pkl")
 
 model = joblib.load(MODEL_PATH)
 
-# ---- SIMPLE MANUAL ENCODING (MATCHES YOUR MODEL) ----
+# ---- SAME ENCODING AS TRAINING ----
 gender_map = {"Male": 1, "Female": 0}
 yesno_map = {"Yes": 1, "No": 0}
 work_map = {"Private": 0, "Self-employed": 1, "Govt_job": 2, "children": 3}
@@ -54,7 +54,6 @@ def home():
 @app.post("/predict")
 def predict(data: StrokeInput):
 
-    # 1️⃣ Encode inputs exactly like training
     encoded = {
         "gender": gender_map.get(data.gender, 1),
         "age": data.age,
@@ -68,7 +67,6 @@ def predict(data: StrokeInput):
         "smoking_status": smoke_map.get(data.smoking_status, 0)
     }
 
-    # 2️⃣ Force exact column order
     columns = [
         "gender","age","hypertension","heart_disease",
         "ever_married","work_type","Residence_type",
@@ -77,19 +75,15 @@ def predict(data: StrokeInput):
 
     df = pd.DataFrame([encoded], columns=columns)
 
-    # 3️⃣ **HARD RESET OF XGBOOST FEATURE NAMES (Render-safe)**
     try:
-        model._Booster = model.get_booster()
-        model._Booster.feature_names = columns
-    except Exception:
-        pass
-
-    # 4️⃣ Predict safely using raw numpy (bypasses feature-name issue)
-    try:
-        pred = int(model.predict(df.values)[0])
+        pred = int(model.predict(df.values)[0])   # SAFE FOR RENDER
         return {
             "stroke_risk": pred,
             "risk_level": "High" if pred == 1 else "Low"
         }
     except Exception as e:
         return {"error": str(e)}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
