@@ -32,7 +32,7 @@ function App() {
       bmi: form.bmi === "" ? undefined : Number(form.bmi),
     };
 
-    const res = await fetch("http://localhost:8000/predict", {
+    const res = await fetch("https://stroke-risk-prediction-and-early.onrender.com/predict", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
