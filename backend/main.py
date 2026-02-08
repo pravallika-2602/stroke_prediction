@@ -54,7 +54,6 @@ def home():
 @app.post("/predict")
 def predict(data: StrokeInput):
 
-    # ---- Encode inputs ----
     encoded = {
         "gender": gender_map.get(data.gender, 1),
         "age": data.age,
@@ -68,23 +67,15 @@ def predict(data: StrokeInput):
         "smoking_status": smoke_map.get(data.smoking_status, 0)
     }
 
-    # ---- Force exact feature names (CRITICAL FIX FOR RENDER) ----
     columns = [
-        "gender",
-        "age",
-        "hypertension",
-        "heart_disease",
-        "ever_married",
-        "work_type",
-        "Residence_type",
-        "avg_glucose_level",
-        "bmi",
-        "smoking_status"
+        "gender", "age", "hypertension", "heart_disease",
+        "ever_married", "work_type", "Residence_type",
+        "avg_glucose_level", "bmi", "smoking_status"
     ]
 
     df = pd.DataFrame([encoded], columns=columns)
 
-    # ---- Force XGBoost to accept feature names ----
+    # 🔥 CRITICAL FIX FOR RENDER + OLD MODELS
     try:
         booster = model.get_booster()
         booster.feature_names = columns
@@ -99,7 +90,3 @@ def predict(data: StrokeInput):
         }
     except Exception as e:
         return {"error": str(e)}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
