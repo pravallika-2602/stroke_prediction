@@ -1,28 +1,37 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 import pandas as pd
 import joblib
 import os
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 app = FastAPI(title="Stroke Risk Prediction API")
 
-# ---- CORS (VERY IMPORTANT FOR VERCEL) ----
+# --------- CORS FIX (VERY IMPORTANT) ----------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # Allow Vercel frontend
+    allow_origins=["*"],        # allow Vercel + everyone
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ---- LOAD MODEL SAFELY ON RENDER ----
+# ---- ALSO HANDLE OPTIONS REQUEST (preflight) ----
+@app.options("/predict")
+async def predict_options():
+    return JSONResponse(content={}, headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+    })
+
+# ---- LOAD MODEL ----
 BASE_DIR = os.path.dirname(__file__)
 MODEL_PATH = os.path.join(BASE_DIR, "stroke_xgb.pkl")
-
 model = joblib.load(MODEL_PATH)
 
-# ---- SAME ENCODING AS TRAINING ----
+# ---- ENCODINGS (must match training) ----
 gender_map = {"Male": 1, "Female": 0}
 yesno_map = {"Yes": 1, "No": 0}
 work_map = {"Private": 0, "Self-employed": 1, "Govt_job": 2, "children": 3}
@@ -34,7 +43,6 @@ smoke_map = {
     "Unknown": 3
 }
 
-# ---- INPUT SCHEMA ----
 class StrokeInput(BaseModel):
     age: int
     gender: str
@@ -76,14 +84,10 @@ def predict(data: StrokeInput):
     df = pd.DataFrame([encoded], columns=columns)
 
     try:
-        pred = int(model.predict(df.values)[0])   # SAFE FOR RENDER
+        pred = int(model.predict(df.values)[0])
         return {
             "stroke_risk": pred,
             "risk_level": "High" if pred == 1 else "Low"
         }
     except Exception as e:
         return {"error": str(e)}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
