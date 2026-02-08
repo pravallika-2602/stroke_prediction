@@ -37,19 +37,25 @@ const submit = async () => {
 
   console.log("Sending payload:", payload); // <-- IMPORTANT DEBUG LINE
 
-  const res = await fetch(
-    "https://stroke-risk-prediction-and-early.onrender.com/predict",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }
-  );
+  const res = await fetch(API_URL, {
+  method: "POST",
+  headers: { 
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+  },
+  body: JSON.stringify(payload),
+});
 
-  const data = await res.json();
-  console.log("Backend response:", data); // <-- IMPORTANT DEBUG LINE
+if (!res.ok) {
+  const text = await res.text();
+  console.error("Backend error:", text);
+  setResult({ risk_level: "Backend Error ❌" });
+  return;
+}
 
-  setResult(data);
+const data = await res.json();
+setResult(data);
+
 };
 
   return (
