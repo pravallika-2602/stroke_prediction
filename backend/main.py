@@ -8,30 +8,34 @@ from fastapi.responses import JSONResponse
 
 app = FastAPI(title="Stroke Risk Prediction API")
 
-# --------- CORS FIX (VERY IMPORTANT) ----------
+# ---------- CORS (SUPER IMPORTANT FOR VERCEL) ----------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],        # allow Vercel + everyone
+    allow_origins=["*"],      # allow Vercel + everyone
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ---- ALSO HANDLE OPTIONS REQUEST (preflight) ----
+# ---------- HANDLE OPTIONS (Preflight fix for 401) ----------
 @app.options("/predict")
 async def predict_options():
-    return JSONResponse(content={}, headers={
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-    })
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+        },
+    )
 
-# ---- LOAD MODEL ----
+# ---------- LOAD MODEL ----------
 BASE_DIR = os.path.dirname(__file__)
 MODEL_PATH = os.path.join(BASE_DIR, "stroke_xgb.pkl")
+
 model = joblib.load(MODEL_PATH)
 
-# ---- ENCODINGS (must match training) ----
+# ---------- SAME ENCODING AS TRAINING ----------
 gender_map = {"Male": 1, "Female": 0}
 yesno_map = {"Yes": 1, "No": 0}
 work_map = {"Private": 0, "Self-employed": 1, "Govt_job": 2, "children": 3}
