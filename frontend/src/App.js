@@ -161,12 +161,17 @@ const submit = async () => {
       </button>
 
       {result && (
-        <div className={`result-container ${result.stroke_risk === 1 ? "result-high" : "result-low"}`}>
-          <h2 className="result-text">
-            Risk Level: {result.risk_level}
-          </h2>
-        </div>
-      )}
+  <div
+    className={`result-container ${
+      result.stroke_risk === 1 ? "result-high" : "result-low"
+    }`}
+  >
+    <h2 className="result-text">
+      Risk Level: {result.risk_level || "Calculating..."}
+    </h2>
+  </div>
+)}
+
     </div>
   );
 }
